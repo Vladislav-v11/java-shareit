@@ -6,9 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.item.dto.CreateItemRequest;
-import ru.practicum.shareit.item.dto.ItemResponse;
-import ru.practicum.shareit.item.dto.UpdateItemRequest;
+import ru.practicum.shareit.item.dto.*;
 import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.List;
@@ -41,9 +39,10 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ItemResponse getItem(@PathVariable @Positive long itemId) {
-        log.debug("Получение вещи: id={}", itemId);
-        return itemService.findById(itemId);
+    public ItemResponse getItem(@PathVariable @Positive long itemId,
+                                @RequestHeader("X-Sharer-User-Id") @Positive long userId) {
+        log.debug("Получение вещи: id={}, userId={}", itemId, userId);
+        return itemService.findById(itemId, userId);
     }
 
     @GetMapping
@@ -59,5 +58,13 @@ public class ItemController {
             return List.of();
         }
         return itemService.search(text);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentResponse addComment(@PathVariable @Positive long itemId,
+                                      @Valid @RequestBody CreateCommentRequest request,
+                                      @RequestHeader("X-Sharer-User-Id") @Positive long userId) {
+        log.info("Добавление комментария: itemId={}, userId={}", itemId, userId);
+        return itemService.addComment(itemId, request, userId);
     }
 }
