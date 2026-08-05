@@ -11,6 +11,7 @@ import lombok.Data;
 public class CreateUserRequest {
     @NotBlank
     private String name;
+
     @NotNull
     @Email
     private String email;
