@@ -1,5 +1,6 @@
 package ru.practicum.shareit.user.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponse create(CreateUserRequest request) {
         if (request.getEmail() != null) {
             userRepository.findByEmail(request.getEmail())
@@ -42,6 +44,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserResponse update(UpdateUserRequest request) {
         User user = userRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -61,6 +64,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void delete(long id) {
         userRepository.deleteById(id);
     }

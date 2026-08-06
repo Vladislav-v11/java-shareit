@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
 
     @Override
+    @Transactional
     public BookingResponse create(CreateBookingRequest request, long userId) {
         User booker = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -58,6 +60,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingResponse approve(long bookingId, boolean approved, long userId) {
         Booking booking = bookingRepository.findByIdAndOwnerId(bookingId, userId)
                 .orElse(null);
