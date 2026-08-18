@@ -6,6 +6,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.shareit.exception.dto.ErrorResponse;
+import ru.practicum.shareit.exception.model.ConflictException;
+import ru.practicum.shareit.exception.model.ForbiddenException;
+import ru.practicum.shareit.exception.model.NotFoundException;
 
 @RestControllerAdvice
 @Slf4j
