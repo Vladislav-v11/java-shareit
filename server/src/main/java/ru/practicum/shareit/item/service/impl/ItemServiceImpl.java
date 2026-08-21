@@ -1,6 +1,7 @@
 package ru.practicum.shareit.item.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ItemServiceImpl implements ItemService {
@@ -40,11 +42,17 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemResponse create(CreateItemRequest request, long userId) {
         User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> {
+                            log.warn("User with id {} not found when creating item", userId);
+                            return new NotFoundException("User not found");
+                        });
         ItemRequest itemRequest = null;
         if (request.getRequestId() != null) {
             itemRequest = itemRequestRepository.findById(request.getRequestId())
-                    .orElseThrow(() -> new NotFoundException("Item request not found"));
+                    .orElseThrow(() -> {
+                        log.warn("Item request with id {} not found when creating item", request.getRequestId());
+                        return new NotFoundException("Item request not found");
+                    });
         }
         Item item = ItemMapper.toEntity(request, itemRequest);
         item.setOwner(owner);
@@ -53,11 +61,16 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemResponse update(long itemId, UpdateItemRequest request, long userId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Item not found"));
+                .orElseThrow(() -> {
+                    log.warn("Item with id {} not found when updating", itemId);
+                    return new NotFoundException("Item not found");
+                });
 
         if (item.getOwner().getId() != userId) {
+            log.warn("User {} attempted to update item {} without ownership", userId, itemId);
             throw new ForbiddenException("Only owner can edit");
         }
         ItemMapper.toEntity(request, item);
@@ -68,7 +81,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemResponse findById(long id,  long userId) {
         Item item = itemRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Item not found"));
+                .orElseThrow(() -> {
+                    log.warn("Item with id {} not found when fetching", id);
+                    return new NotFoundException("Item not found");
+                });
 
         List<CommentResponse> comments = commentRepository.findByItemId(id).stream()
                 .map(ItemMapper::toCommentResponse)
@@ -88,7 +104,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemResponse> findAllOwnerItems(long ownerId) {
         List<Item> items = itemRepository.findByOwnerId(ownerId);
-        if (items.isEmpty()) return List.of();
+        if (items.isEmpty()) {
+            log.debug("No items found for owner {}", ownerId);
+            return List.of();
+        }
 
         List<Long> itemIds = items.stream().map(Item::getId).toList();
 
@@ -107,6 +126,7 @@ public class ItemServiceImpl implements ItemService {
             if (next != null) nextBookings.put(itemId, next);
         });
 
+        log.info("Found {} items for owner {}", items.size(), ownerId);
         Map<Long, List<CommentResponse>> commentsMap = commentRepository.findByItemIdIn(itemIds).stream()
                 .collect(Collectors.groupingBy(
                         c -> c.getItem().getId(),
@@ -123,22 +143,32 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemResponse> search(String text) {
-        return itemRepository.search(text).stream()
+        List<ItemResponse> result = itemRepository.search(text).stream()
                 .map(ItemMapper::toResponse)
                 .toList();
+        log.info("Search returned {} items for text '{}'", result.size(), text);
+        return result;
     }
 
     @Override
     @Transactional
     public CommentResponse addComment(long itemId, CreateCommentRequest request, long userId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Item not found"));
+                .orElseThrow(() -> {
+                    log.warn("Item with id {} not found when adding comment", itemId);
+                    return new NotFoundException("Item not found");
+                });
+
         User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> {
+            log.warn("User with id {} not found when adding comment", userId);
+            return new NotFoundException("User not found");
+        });
 
         boolean hasBooked = bookingRepository
                 .existsByItemIdAndBookerIdAndApprovedAndEndBefore(itemId, userId);
         if (!hasBooked) {
+            log.warn("User {} attempted to comment on item {} without a finished booking", userId, itemId);
             throw new IllegalArgumentException("User has not booked this item");
         }
 
