@@ -12,6 +12,8 @@ import ru.practicum.shareit.item.dto.CreateCommentDto;
 import ru.practicum.shareit.item.dto.CreateItemDto;
 import ru.practicum.shareit.item.dto.UpdateItemDto;
 
+import java.util.List;
+
 @Controller
 @RequestMapping(path = "/items")
 @RequiredArgsConstructor
@@ -51,6 +53,9 @@ public class ItemController {
     @GetMapping("/search")
     public ResponseEntity<Object> search(@RequestParam String text) {
         log.info("Search items: {}", text);
+        if (text.isBlank()) {
+            return ResponseEntity.ok(List.of());
+        }
         return itemClient.search(text);
     }
 
